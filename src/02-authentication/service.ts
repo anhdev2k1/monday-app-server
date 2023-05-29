@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import nodemailer from 'nodemailer';
-import { config } from '../root/configs';
+import { config, oAuth2Client } from '../root/configs';
 import { BadRequestError } from '../root/responseHandler/error.response';
 import { getInfodata } from '../root/utils';
 import {
@@ -62,8 +62,10 @@ export default class AccessService {
     return this.sendResToClient({ Doc: foundUser, fields: ['_id', 'email', 'userProfile'] }, res);
   }
 
-  static async sendCodeAgain({ email, password }: ISendCodeAgain) {
-    const foundUser = await this.getAndValidateUser({ email, password });
+  static async sendCodeAgain({ email }: ISendCodeAgain) {
+    const foundUser = await User.findByEmail({ email });
+
+    if (!foundUser) throw new BadRequestError('User is not found');
 
     const { code, codeLifeTimeMinutes, expiresIn } = foundUser.generateCode();
 
@@ -74,7 +76,7 @@ export default class AccessService {
       },
     });
 
-    return this.sendGamil({ email, code, codeLifeTimeMinutes });
+    return this.sendGmail({ email, code, codeLifeTimeMinutes });
   }
 
   static async signUp({ name, email, password }: ISignUpParams) {
@@ -140,7 +142,7 @@ export default class AccessService {
         { session }
       );
 
-      await this.sendGamil({ email, code, codeLifeTimeMinutes });
+      await this.sendGmail({ email, code, codeLifeTimeMinutes });
     });
   }
 
@@ -178,8 +180,8 @@ export default class AccessService {
     };
   }
 
-  static async sendGamil({ email, code, codeLifeTimeMinutes }: ISendGmail) {
-    // const accessToken = await oAuth2Client.getAccessToken();
+  static async sendGmail({ email, code, codeLifeTimeMinutes }: ISendGmail) {
+    const accessToken = await oAuth2Client.getAccessToken();
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       service: 'gmail',
@@ -191,6 +193,7 @@ export default class AccessService {
         clientId: config.email.clientId,
         clientSecret: config.email.clientSecret,
         refreshToken: config.email.refreshToken,
+        accessToken: accessToken.token?.toString(),
       },
     });
 

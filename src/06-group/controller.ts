@@ -1,13 +1,14 @@
-import { IControllerWithoutGet, IRequestWithAuth } from '../root/app.interfaces';
+import { IRequestWithAuth } from '../root/app.interfaces';
 import { CREATED, OK } from '../root/responseHandler/success.response';
 import { Fn, catchAsync } from '../root/utils/catchAsync';
+import { IGroupController } from './interfaces/controller';
 import GroupService from './service';
 
-class GroupController<T extends IRequestWithAuth> implements IControllerWithoutGet<T> {
+class GroupController<T extends IRequestWithAuth> implements IGroupController<T> {
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
     const createdNewGroup = await GroupService.createGroup({
       boardId: req.params.boardId,
-      data: req.body,
+      groups: req.body.groups,
     });
 
     new CREATED({
@@ -32,8 +33,25 @@ class GroupController<T extends IRequestWithAuth> implements IControllerWithoutG
     }).send(res);
   });
 
+  updateAllGroups: Fn<T> = catchAsync(async (req, res, next) => {
+    const updatedAllGroups = await GroupService.updateAllGroups({
+      boardId: req.params.boardId,
+      groups: req.body.groups,
+    });
+    new OK({
+      message: 'Update all groups successfully',
+      metadata: {
+        groups: updatedAllGroups,
+      },
+    }).send(res);
+  });
+
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
-    await GroupService.deleteGroup({ boardId: req.params.boardId, groupId: req.params.id });
+    await GroupService.deleteGroup({
+      boardId: req.params.boardId,
+      groupId: req.params.id,
+      groups: req.body.groups,
+    });
     new OK({
       message: 'Delete group successfully',
       metadata: null,
