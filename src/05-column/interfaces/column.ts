@@ -3,19 +3,23 @@ import { Doc, DocObj } from '../../root/app.interfaces';
 import { ITypeDoc } from './type';
 import { IDefaultValueDoc } from '../../08-value/interfaces/defaultValue';
 import { IBoardDoc } from '../../04-board/interfaces/board';
+import { ITasksColumnsDoc } from '../../08-value/interfaces/tasksColumns';
 
 export interface IColumn {
   name: string;
   position: number;
-  belongType: Types.ObjectId;
-  defaultValues: Types.ObjectId[];
+  belongType: Types.ObjectId | NonNullable<ITypeDoc>;
+  defaultValues: Types.ObjectId[] | NonNullable<IDefaultValueDoc>[];
+}
+
+export interface IColumnForCreate {
+  position: number;
+  belongType: string;
 }
 
 export interface IColumnWithId {
-  _id?: string;
-  name: string;
+  _id: string;
   position: number;
-  belongType: string;
 }
 
 /////////////////////////////////////
@@ -29,7 +33,7 @@ export interface IFindByColumnAndUpdatePosition {
 }
 
 export interface ICreateNewColumn {
-  boardId: string;
+  boardDoc: NonNullable<IBoardDoc>;
   typeId: string;
   position: number;
   userId: Types.ObjectId;
@@ -49,12 +53,11 @@ export interface ICreateNewColumnsResult {
 
 export interface ICreateNewColumnResult {
   createdNewColumn: NonNullable<IColumnDoc>;
-  defaultValues: NonNullable<IDefaultValueDoc>[];
-  tasksColumnsIds: Types.ObjectId[];
+  tasksColumns: NonNullable<ITasksColumnsDoc>[];
 }
 
 export interface IUpdateAllColumns {
-  columns: NonNullable<IColumnDoc>[];
+  columns: IColumnWithId[];
   session: ClientSession;
 }
 
@@ -88,7 +91,7 @@ export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
   }: IFindByColumnAndUpdatePosition): Promise<NonNullable<IColumnDoc>>;
 
   createNewColumn({
-    boardId,
+    boardDoc,
     typeId,
     userId,
     position,
@@ -100,8 +103,6 @@ export interface ColumnModel extends Model<IColumn, {}, IColumnMethods> {
     userId,
     session,
   }: ICreateNewColumns): Promise<ICreateNewColumnsResult>;
-
-  updateAllColumnsForDelete({ columns, session }: IUpdateAllColumns): Promise<void>;
 
   updateAllColumns({ columns, session }: IUpdateAllColumns): Promise<NonNullable<IColumnDoc>[]>;
 

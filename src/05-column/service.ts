@@ -1,9 +1,9 @@
 import Board from '../models/board';
 import Column from '../models/column';
 import Type from '../models/type';
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { BadRequestError, NotFoundError } from '../root/responseHandler/error.response';
 import { performTransaction } from '../root/utils/performTransaction';
-import { ICreateNewColumnResult } from './interfaces/column';
+import { IColumnDoc } from './interfaces/column';
 import { ICreateColumnResult } from './interfaces/controller';
 import {
   ICreateColumnParams,
@@ -21,49 +21,64 @@ export default class ColumnService {
   static async createColumn({
     boardId,
     userId,
-    columns,
+    data,
   }: ICreateColumnParams): Promise<ICreateColumnResult> {
+    const insertPosition = data.position;
     return await performTransaction<ICreateColumnResult>(async (session) => {
-      let creatingNewColumnInfoPromise: Promise<ICreateNewColumnResult> | null = null;
-      const workingColumnPromises = columns.map((column, index) => {
-        if (column._id) {
-          return Column.findByIdAndUpdatePosition({
-            columnId: column._id,
-            position: index,
-            session,
-          });
-        } else {
-          creatingNewColumnInfoPromise = Column.createNewColumn({
-            boardId,
-            typeId: column.belongType,
-            position: index,
-            userId,
-            session,
-          });
-        }
+      const foundBoardWithColumns = await Board.findById(boardId, {}, { session }).populate({
+        path: 'columns',
+        select: '_id position',
+        options: {
+          sort: { position: 1 },
+        },
       });
-      if (!creatingNewColumnInfoPromise)
-        throw new BadRequestError('Missing some fields when create a new column');
-      workingColumnPromises.unshift(creatingNewColumnInfoPromise);
 
-      const [createdNewColumnInfo] = await Promise.all(workingColumnPromises);
-      return { createdNewColumnInfo };
+      if (!foundBoardWithColumns) throw new NotFoundError('Board is not found');
+      if (insertPosition > foundBoardWithColumns.columns.length)
+        throw new BadRequestError(`Invalid position ${insertPosition} to create a new column`);
+
+      let updatingColumnPromises: any = [];
+      const slicedColumns = foundBoardWithColumns.columns.slice(insertPosition);
+      updatingColumnPromises = slicedColumns.map((column, index) => {
+        return (column as NonNullable<IColumnDoc>).updateOne(
+          {
+            $set: {
+              position: insertPosition + index + 1,
+            },
+          },
+          { new: true, session }
+        );
+      });
+
+      const creatingColumnPromise = Column.createNewColumn({
+        boardDoc: foundBoardWithColumns,
+        typeId: data.belongType,
+        position: insertPosition,
+        userId: userId,
+        session,
+      });
+
+      updatingColumnPromises.unshift(creatingColumnPromise);
+
+      const [createdNewColumn] = await Promise.all(updatingColumnPromises);
+      return createdNewColumn;
     });
   }
 
   static async updateColumn({ columnId, updationData }: IUpdateColumnParams) {
     if (updationData.belongType) throw new BadRequestError(`Column can't change type`);
+    if (updationData.position) throw new BadRequestError(`Can't modify position of column`);
     const updatedColumn = await Column.findByIdAndUpdate(columnId, updationData, {
       new: true,
     }).lean();
-    if (!updatedColumn) throw new BadRequestError('Column is not found');
+    if (!updatedColumn) throw new NotFoundError('Column is not found');
     return updatedColumn;
   }
 
   static async updateAllColumns({ boardId, columns }: IUpdateAllColumnsParams) {
     const foundBoard = await Board.findById(boardId).lean();
 
-    if (!foundBoard) throw new BadRequestError('Board is not founds');
+    if (!foundBoard) throw new NotFoundError('Board is not found');
 
     if (foundBoard.columns.length !== columns.length)
       throw new BadRequestError(
@@ -85,12 +100,9 @@ export default class ColumnService {
     });
   }
 
-  static async deleteColumn({ boardId, columns, columnId }: IDeleteColumnParams) {
+  static async deleteColumn({ boardId, columnId }: IDeleteColumnParams) {
     const foundBoard = await Board.findById(boardId);
-    if (!foundBoard) throw new BadRequestError('Board is not found');
-
-    if (foundBoard.columns.length - 1 !== columns.length)
-      throw new BadRequestError('Please send all the columns when delete a column in board');
+    if (!foundBoard) throw new NotFoundError('Board is not found');
 
     return await performTransaction(async (session) => {
       await Column.deleteColumn({
@@ -98,7 +110,6 @@ export default class ColumnService {
         columnId,
         session,
       });
-      await Column.updateAllColumnsForDelete({ columns, session });
     });
   }
 }

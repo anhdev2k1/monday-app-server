@@ -1,15 +1,15 @@
-import { Schema } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 import {
   BoardModel,
   IBoard,
+  IBoardDoc,
   IBoardMethods,
   ICreateNewBoard,
-  ICreateNewBoardResult,
   IDeleteBoard,
 } from '../04-board/interfaces/board';
 import db from '../root/db';
 import Column from './column';
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { NotFoundError } from '../root/responseHandler/error.response';
 import Group from './group';
 import { convertToArrObj } from '../root/utils';
 import Workspace from './workspace';
@@ -70,7 +70,7 @@ boardSchema.static(
     userId,
     data,
     session,
-  }: ICreateNewBoard): Promise<ICreateNewBoardResult> {
+  }: ICreateNewBoard): Promise<IBoardDoc> {
     const [createdNewBoard] = await this.insertMany(
       [
         {
@@ -120,7 +120,7 @@ boardSchema.static(
         fields: ['_id', 'name', 'position', 'tasks'],
         objects: createdNewGroups,
       }),
-    } as ICreateNewBoardResult;
+    } as IBoardDoc;
   }
 );
 
@@ -128,7 +128,7 @@ boardSchema.static(
   'deleteBoard',
   async function deleteBoard({ workspaceId, boardId, session }: IDeleteBoard) {
     const deletedBoard = await this.findByIdAndDelete(boardId, { session });
-    if (!deletedBoard) throw new BadRequestError('Board is not found');
+    if (!deletedBoard) throw new NotFoundError('Board is not found');
 
     if (workspaceId) {
       const updatedWorkspace = await Workspace.findByIdAndUpdate(
@@ -140,7 +140,7 @@ boardSchema.static(
         },
         { session }
       );
-      if (!updatedWorkspace) throw new BadRequestError('Workspace is not found');
+      if (!updatedWorkspace) throw new NotFoundError('Workspace is not found');
     }
 
     // Delete all columns and groups for each board
@@ -150,7 +150,7 @@ boardSchema.static(
       { session }
     );
 
-    const deleteGroupPromises = deletedBoard.groups.map((groupId) =>
+    const deleteGroupPromises = (deletedBoard.groups as Types.ObjectId[]).map((groupId) =>
       Group.deleteGroup({ groupId, session })
     );
 

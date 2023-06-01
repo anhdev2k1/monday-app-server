@@ -12,6 +12,7 @@ import {
 import { ITaskDoc } from '../07-task/interfaces/task';
 import { createSetOfTasksColumnsByColumn } from '../root/utils';
 import Task from './task';
+import { IGroupDoc } from '../06-group/interfaces/group';
 
 const DOCUMENT_NAME = 'TasksColumns';
 const COLLECTION_NAME = 'TasksColumnss';
@@ -69,6 +70,9 @@ tasksColumnsSchema.static(
   }: ICreateTasksColumnsByColumn) {
     const boardWithGroups = await boardDoc.populate({
       path: 'groups',
+      options: {
+        sort: { position: 1 },
+      },
       populate: {
         path: 'tasks',
         options: {
@@ -77,12 +81,16 @@ tasksColumnsSchema.static(
       },
     });
 
-    const tasks = boardWithGroups.groups.reduce(
-      (currTasks: NonNullable<ITaskDoc>[], group: any) => {
-        currTasks.push(...group.tasks);
-        return currTasks;
-      },
-      []
+    // const tasks = (boardWithGroups.groups as NonNullable<IGroupDoc>[]).reduce(
+    //   (currTasks: NonNullable<ITaskDoc>[], group) => {
+    //     currTasks.push(...(group.tasks as NonNullable<ITaskDoc>[]));
+    //     return currTasks;
+    //   },
+    //   []
+    // );
+
+    const tasks = (boardWithGroups.groups as NonNullable<IGroupDoc>[]).flatMap(
+      (group) => group.tasks as NonNullable<ITaskDoc>[]
     );
 
     const updatingTaskPromises = tasks.map((task) =>

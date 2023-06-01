@@ -19,20 +19,16 @@ class ColumnController<T extends IRequestWithAuth> implements IColumnController<
   });
 
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
-    const { columns } = req.body;
-    if (!columns) throw new BadRequestError('Invalid transmitted data');
-
-    const { createdNewColumn, defaultValues, tasksColumnsIds } = await ColumnService.createColumn({
+    const { createdNewColumn, tasksColumns } = await ColumnService.createColumn({
       boardId: req.params.boardId,
       userId: req.user._id,
-      columns,
+      data: req.body,
     });
     new CREATED({
       message: 'Create a new column successfully',
       metadata: {
         column: createdNewColumn,
-        defaultValues,
-        tasksColumnsIds,
+        tasksColumns,
       },
     }).send(res);
   });
@@ -66,12 +62,9 @@ class ColumnController<T extends IRequestWithAuth> implements IColumnController<
   });
 
   deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
-    const { columns } = req.body;
-    if (!columns) throw new BadRequestError('Invalid transmitted data');
     await ColumnService.deleteColumn({
       columnId: req.params.id,
       boardId: req.params.boardId,
-      columns,
     });
     new OK({
       message: 'Delete a column succesfully',

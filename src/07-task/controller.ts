@@ -22,12 +22,10 @@ class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
   });
 
   createOne: Fn<T> = catchAsync(async (req, res, next) => {
-    const { tasks } = req.body;
-    if (!tasks) throw new BadRequestError('Invalid transmitted data');
     const createdNewTask = await TaskService.createTask({
       boardId: req.params.boardId,
       groupId: req.params.groupId,
-      tasks,
+      data: req.body,
     });
 
     new CREATED({
@@ -67,22 +65,25 @@ class TaskController<T extends IRequestWithAuth> implements ITaskController<T> {
     }).send(res);
   });
 
-  deleteOne: Fn<T> = catchAsync(async (req, res, next) => {
-    const { tasks } = req.body;
-    if (!tasks) throw new BadRequestError('Invalid transmitted data');
-    await TaskService.deleteTask({
+  deleteTasks: Fn<T> = catchAsync(async (req, res, next) => {
+    const { ids } = req.query;
+    if (!ids) throw new BadRequestError('Missing some fields to delete tasks');
+    const taskIds = (ids as string).split(',');
+    await TaskService.deleteTasks({
       groupId: req.params.groupId,
-      taskId: req.params.id,
-      tasks,
+      taskIds,
     });
+
     new OK({
-      message: 'Delete task successfully',
+      message: 'Delete tasks successfully',
       metadata: null,
     }).send(res);
   });
 
-  deleteAllTasks: Fn<T> = catchAsync(async (req, res, next) => {
-    await TaskService.deleteAllTasks({
+  deleteOne: Fn<T> = catchAsync(async (req, res, next) => {});
+
+  deleteAllTasksInGroup: Fn<T> = catchAsync(async (req, res, next) => {
+    await TaskService.deleteAllTasksInGroup({
       groupId: req.params.groupId,
     });
     new OK({

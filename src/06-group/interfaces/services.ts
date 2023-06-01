@@ -1,9 +1,9 @@
 import { ClientSession } from 'mongoose';
-import { IGroup, IGroupDoc, IGroupWithId } from './group';
+import { IGroup, IGroupDoc, IGroupForCreate } from './group';
 
 export interface ICreateGroupParams {
   boardId: string;
-  groups: IGroupWithId[];
+  data: IGroupForCreate;
 }
 
 export interface IUpdateGroupParams {
@@ -19,6 +19,5 @@ export interface IUpdateAllGroupsParams {
 
 export interface IDeleteGroupParams {
   boardId: string;
-  groups: NonNullable<IGroupDoc>[];
   groupId: string;
 }

@@ -11,8 +11,7 @@ import {
   IUpdateAllPositionGroups,
 } from '../06-group/interfaces/group';
 import db from '../root/db';
-import Board from './board';
-import { BadRequestError } from '../root/responseHandler/error.response';
+import { NotFoundError } from '../root/responseHandler/error.response';
 import Task from './task';
 
 const DOCUMENT_NAME = 'Group';
@@ -48,22 +47,20 @@ var groupSchema = new Schema<IGroup, GroupModel, IGroupMethods>(
 groupSchema.static(
   'createNewGroup',
   async function createNewGroup({
-    boardId,
+    boardDoc,
     data,
     session,
   }: ICreateNewGroup): Promise<NonNullable<IGroupDoc>> {
     const [createdNewGroup] = await this.create([{ ...data }], { session });
 
-    const updatedBoard = await Board.findByIdAndUpdate(
-      boardId,
+    await boardDoc.updateOne(
       {
         $push: {
           groups: createdNewGroup._id,
         },
       },
-      { session }
+      { new: true, session }
     );
-    if (!updatedBoard) throw new BadRequestError('Board is not found');
     return createdNewGroup;
   }
 );
@@ -127,7 +124,7 @@ groupSchema.static(
       },
       { new: true, session }
     );
-    if (!updatedGroup) throw new BadRequestError(`Group with id: ${groupId} is not found`);
+    if (!updatedGroup) throw new NotFoundError(`Group with id: ${groupId} is not found`);
     return updatedGroup;
   }
 );
@@ -154,7 +151,7 @@ groupSchema.static(
   'deleteGroup',
   async function deleteGroup({ boardDoc, groupId, session }: IDeleteGroup) {
     const deletedGroup = await this.findByIdAndDelete(groupId, { session });
-    if (!deletedGroup) throw new BadRequestError('Group is not found');
+    if (!deletedGroup) throw new NotFoundError('Group is not found');
 
     // Delete all tasks and values of each task in this group
     if (boardDoc) {
@@ -166,6 +163,28 @@ groupSchema.static(
         },
         { session }
       );
+      const foundAllGroupsInBoard = await this.find(
+        {
+          _id: { $in: boardDoc.groups },
+        },
+        {},
+        { session }
+      ).sort({ position: 1 });
+
+      const slicedGroups = foundAllGroupsInBoard.slice(deletedGroup.position);
+
+      const updatingPositionAllGroupsPromises = slicedGroups.map((group, index) =>
+        group.updateOne(
+          {
+            $set: {
+              position: deletedGroup.position + index,
+            },
+          },
+          { session }
+        )
+      );
+
+      await Promise.all(updatingPositionAllGroupsPromises);
     }
 
     const deleteTaskPromises = deletedGroup.tasks.map((task) =>

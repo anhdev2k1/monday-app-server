@@ -1,4 +1,4 @@
-import { ITask, ITaskDoc, ITaskWithId } from './task';
+import { ITask, ITaskDoc, ITaskForCreate } from './task';
 
 export interface IGetTaskParams {
   taskId: string;
@@ -7,7 +7,7 @@ export interface IGetTaskParams {
 export interface ICreateTaskParams {
   boardId: string;
   groupId: string;
-  tasks: ITaskWithId[];
+  data: ITaskForCreate;
 }
 
 export interface IUpdateAllTasksParams {
@@ -20,12 +20,11 @@ export interface IUpdateTaskParams {
   updationData: Partial<ITask>;
 }
 
-export interface IDeleteTaskParams {
+export interface IDeleteTasks {
   groupId: string;
-  tasks: NonNullable<ITaskDoc>[];
-  taskId: string;
+  taskIds: string[];
 }
 
-export interface IDeleteAllTasksParams {
+export interface IDeleteAllTasksInGroup {
   groupId: string;
 }
