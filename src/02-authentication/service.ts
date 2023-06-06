@@ -31,7 +31,7 @@ export default class AccessService {
     const foundUser = await this.getAndValidateUser({ email, password });
 
     if (!foundUser.isVerified)
-      throw new BadRequestError(`User haven't verify code! Try sign-up again`);
+      throw new BadRequestError(`User haven't verify code! Try sign-up or verify code again`);
 
     return this.sendResToClient({ Doc: foundUser, fields: ['_id', 'email', 'userProfile'] }, res);
   }
@@ -39,6 +39,8 @@ export default class AccessService {
   static async verifyCode({ email, code }: IVerfiyCode, res: Response) {
     const foundUser = await User.findByEmail({ email });
     if (!foundUser) throw new NotFoundError('User is not found');
+
+    if (foundUser.isVerified) throw new BadRequestError('User is verified');
 
     if (foundUser.code !== code) throw new BadRequestError('Code is invalid');
 
@@ -66,6 +68,8 @@ export default class AccessService {
     const foundUser = await User.findByEmail({ email });
 
     if (!foundUser) throw new NotFoundError('User is not found');
+
+    if (foundUser.isVerified) throw new BadRequestError('User is verified');
 
     const { code, codeLifeTimeMinutes, expiresIn } = foundUser.generateCode();
 
