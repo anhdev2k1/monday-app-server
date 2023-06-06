@@ -33,6 +33,9 @@ export default class AccessService {
     if (!foundUser.isVerified)
       throw new BadRequestError(`User haven't verify code! Try sign-up or verify code again`);
 
+    const isMatchPassword = await foundUser.isMatchPassword(password);
+    if (!isMatchPassword) throw new BadRequestError('Password is not correct');
+
     return this.sendResToClient({ Doc: foundUser, fields: ['_id', 'email', 'userProfile'] }, res);
   }
 
