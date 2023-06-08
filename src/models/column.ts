@@ -189,6 +189,8 @@ columnSchema.static(
 
     const gotDefaultValuesFromColumns = await Promise.all(gettingDefaultValuesFromColPromises);
 
+    console.log({ gotDefaultValuesFromColumns });
+
     return {
       createdNewColumns: gotDefaultValuesFromColumns,
       selectedDefaultValues: selectedDefaultValue,
