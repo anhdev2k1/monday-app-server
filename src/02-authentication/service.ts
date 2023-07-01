@@ -86,70 +86,36 @@ export default class AccessService {
     return this.sendGmail({ email, code, codeLifeTimeMinutes });
   }
 
-  static async signUp({ name, email, password }: ISignUpParams) {
+  static async signUp({ name, email, password }: ISignUpParams, res: Response) {
     return await performTransaction(async (session) => {
       //TODO 1: Check if email exist
-      let foundUser = await User.findByEmail({ email });
+      const foundUser = await User.findByEmail({ email });
 
       //TODO 2: If exist => return error
-      if (foundUser && foundUser.isVerified)
-        throw new BadRequestError('User is already registered');
+      if (foundUser) throw new BadRequestError('User is already registered');
 
-      if (foundUser && !foundUser.isVerified) {
-        await UserProfile.findByIdAndUpdate(
-          foundUser.id,
-          {
-            name,
-          },
-          { session }
-        );
+      //TODO 3: Create new User
+      const [newUserProfile] = await UserProfile.create([{ name }], { session });
 
-        await foundUser.updateOne(
+      const [newUser] = await User.create(
+        [
           {
-            $set: {
-              password,
-              userProfile: {
-                name,
-              },
+            email,
+            password,
+            userProfile: {
+              name: newUserProfile.name,
             },
           },
-          { session }
-        );
-      }
-
-      if (!foundUser) {
-        //TODO 3: Create new User
-        const [newUserProfile] = await UserProfile.create([{ name }], { session });
-
-        const [createdNewUser] = await User.create(
-          [
-            {
-              _id: newUserProfile._id,
-              email,
-              password,
-              userProfile: {
-                name: newUserProfile.name,
-              },
-            },
-          ],
-          { session }
-        );
-        foundUser = createdNewUser;
-      }
-
-      const { code, codeLifeTimeMinutes, expiresIn } = foundUser.generateCode();
-
-      await foundUser.updateOne(
-        {
-          $set: {
-            code: code,
-            expiresIn: expiresIn,
-          },
-        },
+        ],
         { session }
       );
-
-      await this.sendGmail({ email, code, codeLifeTimeMinutes });
+      await Workspace.create({
+        name: 'Main Workspace',
+        createdBy: newUser._id,
+        isMain: true,
+      });
+      //TODO 4: Create token -> send it to client
+      return this.sendResToClient({ Doc: newUser, fields: ['_id', 'email', 'userProfile'] }, res);
     });
   }
 

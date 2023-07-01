@@ -19,6 +19,7 @@ class WorkspaceController<T extends IRequestWithAuth> implements IWorkspaceContr
   });
 
   getAll: Fn<T> = catchAsync(async (req, res, next) => {
+    
     const foundWorkspaces = await WorkspaceService.getAllWorkspaces({
       userId: req.user._id,
       fields: '_id name description isMain',

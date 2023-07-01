@@ -46,7 +46,7 @@ class AcessController<T extends IRequestWithAuth> implements IAccessController<T
     if (!name || !email || !password) throw new BadRequestError('Missing some fields');
     new OK({
       message: 'Check code in your gmail',
-      metadata: await AccessService.signUp({ name, email, password }),
+      metadata: await AccessService.signUp({ name, email, password },res),
     }).send(res);
   });
 
