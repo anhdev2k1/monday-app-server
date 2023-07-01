@@ -7,11 +7,15 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "start": "node ./src/server.ts",
-    "dev": "nodemon ./src/server.ts",
-    "prod": "ts-node ./src/server.ts",
-    "import": "set STATUS=import&& ts-node ./src/root/helpers/importDataTypes.ts"
+    "start": "nodemon ./src/index.ts",
+    "dev": "nodemon ./src/index.ts",
+    "prod": "ts-node ./src/index.ts",
+    "import": "set STATUS=import&& ts-node ./src/root/helpers/importDataTypes.ts",
+    "build": "rimraf dist && tsc",
+    "ts.check": "tsc --project tsconfig.json",
+    "add-build": "git add dist"
   },
+  
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -50,6 +54,8 @@
     "nodemailer": "^6.9.2",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.1",
+    "pre-commit": "^1.2.2",
+    "rimraf": "^5.0.1",
     "validator": "^13.9.0"
   }
 }
