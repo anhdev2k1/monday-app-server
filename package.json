@@ -11,11 +11,8 @@
     "dev": "nodemon ./src/index.ts",
     "prod": "ts-node ./src/index.ts",
     "import": "set STATUS=import&& ts-node ./src/root/helpers/importDataTypes.ts",
-    "build": "rimraf dist && tsc",
-    "ts.check": "tsc --project tsconfig.json",
-    "add-build": "git add dist"
+    "build": "tsc"
   },
-  
   "keywords": [],
   "author": "",
   "license": "ISC",
