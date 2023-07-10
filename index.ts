@@ -13,13 +13,7 @@ const PORT = config.app.port;
 
 const app = express();
 import './src/root/db';
-app.use(
-  cors({
-    origin: 'https://monday-app-client.vercel.app/',
-    credentials: true,
-    // exposedHeaders: ['set-cookie'],
-  })
-);
+app.use(cors());
 
 if (config.env === 'dev') {
   app.use(morgan('dev'));
@@ -34,7 +28,8 @@ applyPassportStrategy(passport);
 app.get('/', (req, res) => {
   res.send('Hello Văn Anh');
 });
-//* Init routes
+
+
 app.use('/v1/api', router);
 app.use((err: ErrorResponse, req: Request, res: Response, next: NextFunction) => {
   const statusCode = err.statusCode || 500;
@@ -45,6 +40,7 @@ app.use((err: ErrorResponse, req: Request, res: Response, next: NextFunction) =>
     message: err.message || 'Internal Server Error',
   });
 });
+
 app.all('*', (req, res, next) => {
   next(new NotFoundError(`Can't find ${req.originalUrl} on this server`));
 });
