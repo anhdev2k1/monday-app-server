@@ -20,7 +20,7 @@ app.use(
   cors({
     origin: 'http://localhost:3000',
     credentials: true,
-    exposedHeaders: ['set-cookie'],
+    // exposedHeaders: ['set-cookie'],
   })
 );
 
@@ -38,15 +38,14 @@ applyPassportStrategy(passport);
 
 //* Init db
 import './db';
-
+app.get('/', (req, res) => {
+  res.send('Hello Văn Anh');
+});
 //* Init routes
 app.use('/v1/api', router);
 
 //* Handling error
 
-app.all('*', (req, res, next) => {
-  next(new NotFoundError(`Can't find ${req.originalUrl} on this server`));
-});
 
 app.use((err: ErrorResponse, req: Request, res: Response, next: NextFunction) => {
   const statusCode = err.statusCode || 500;
@@ -57,4 +56,8 @@ app.use((err: ErrorResponse, req: Request, res: Response, next: NextFunction) =>
     message: err.message || 'Internal Server Error',
   });
 });
+app.all('*', (req, res, next) => {
+  next(new NotFoundError(`Can't find ${req.originalUrl} on this server`));
+});
+
 export default app;
