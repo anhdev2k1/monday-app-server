@@ -15,7 +15,7 @@ const app = express();
 import './src/root/db';
 app.use(
   cors({
-    origin: 'http://localhost:3000',
+    origin: 'https://monday-app-client.vercel.app/',
     credentials: true,
     // exposedHeaders: ['set-cookie'],
   })
