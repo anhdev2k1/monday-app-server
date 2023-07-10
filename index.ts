@@ -13,7 +13,9 @@ const PORT = config.app.port;
 
 const app = express();
 import './src/root/db';
-app.use(cors());
+app.use(cors({
+  origin: "*"
+}));
 
 if (config.env === 'dev') {
   app.use(morgan('dev'));
